@@ -1,9 +1,10 @@
 # Project specific files
 plugins/
 output/
-xvm/compile/wabt/build/
-contractsdk/cpp/build
-event_client
+test/
+testnet/
+logs/
+.compile_cache
 
 # Compiled source
 *.com

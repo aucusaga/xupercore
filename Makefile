@@ -1,39 +1,45 @@
-ifeq ($(OS),Windows_NT)
-  PLATFORM="Windows"
-else
-  ifeq ($(shell uname),Darwin)
-    PLATFORM="MacOS"
-  else
-    PLATFORM="Linux"
-  endif
-endif
+# init project PATH
+HOMEDIR := $(shell pwd)
+OUTDIR  := $(HOMEDIR)/output
+COMPILECACHEDIR := $(HOMEDIR)/.compile_cache
+XVMDIR  := $(COMPILECACHEDIR)/xvm
+TESTNETDIR := $(HOMEDIR)/testnet
 
-all: build 
+# init command params
 export GO111MODULE=on
-#export GOFLAGS=-mod=vendor
-XCHAIN_ROOT := ${PWD}
-export XCHAIN_ROOT
-PATH := ${PWD}/xvm/compile/wabt/build:$(PATH)
+X_ROOT_PATH := $(HOMEDIR)
+export X_ROOT_PATH
+export PATH := $(OUTDIR)/bin:$(XVMDIR):$(PATH)
 
-build:
-	PLATFORM=$(PLATFORM) ./scripts/build.sh
+# make, make all
+all: clean compile
 
-test:
+# make compile, go build
+compile: xvm xchain
+# make xchain
+xchain:
+	bash $(HOMEDIR)/example/xchain/auto/build.sh
+# make xvm
+xvm:
+	bash $(HOMEDIR)/example/xchain/auto/build_xvm.sh
+
+# make test, test your code
+test: xvm unit
+unit:
 	go test -coverprofile=coverage.txt -covermode=atomic ./...
-	# test wasm sdk
-	GOOS=js GOARCH=wasm go build github.com/xuperchain/xupercore/contractsdk/go/driver
 
-contractsdk:
-	make -C contractsdk/cpp build
-	make -C contractsdk/cpp test
-
+# make clean
+cleanall: clean cleantest cleancache
 clean:
-	rm -rf output
-	rm -rf logs
-	rm -rf plugins
-	rm -f xchain-cli
-	rm -f xchain
-	rm -f dump_chain
-	rm -f event_client
+	rm -rf $(OUTDIR)
+cleantest:
+	rm -rf $(TESTNETDIR)
+cleancache:
+	rm -rf $(COMPILECACHEDIR)
 
-.PHONY: all test clean
+# deploy test network
+testnet:
+	bash $(HOMEDIR)/example/xchain/auto/deploy_testnet.sh
+
+# avoid filename conflict and speed up build
+.PHONY: all compile test clean
